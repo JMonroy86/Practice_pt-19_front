@@ -1,4 +1,6 @@
+import { createBrowserHistory } from 'history';
 const getState = ({ getStore, getActions, setStore }) => {
+    let history = createBrowserHistory();
     return {
         store: {
             currentUser: null,
@@ -10,22 +12,42 @@ const getState = ({ getStore, getActions, setStore }) => {
                 try {
                     const actions = getActions()
                     const store = getStore()
-                    const resp = await fetch(process.env.REACT_APP_API_URL + 'api/register', {
+                    const resp = await fetch(process.env.REACT_APP_API_URL + 'api/v1/auth/login', {
                         method: 'POST',
-                        headers: { "Content-type": "application/json",
-                                    authorization: 'Bearer ' + store.currentUser.token },
+                        headers: { "Content-type": "application/json"},
                         body: JSON.stringify(state)
                     })
                     const data = await resp.json()
-                    await actions.getSingleUser(data.id)
-                    setStore({ currentUser: data })
+                    setStore({...store, currentUser: data })
+                    await actions.getSingleUser(data.token)
                 } catch (error) {
-                    console.log(error)
+                    console.error(error)
                 }
             },
-            getSingleUser: async id => {
+            sendFormRegister: async state => {
                 try {
-                    const resp = await fetch(process.env.REACT_APP_API_URL + 'api/users/' + id)
+                    const store = getStore()
+                    const resp = await fetch(process.env.REACT_APP_API_URL + 'api/v1/auth/register', {
+                        method: 'POST',
+                        headers: { "Content-type": "application/json"},
+                        body: JSON.stringify(state)
+                    })
+                    const data = await resp.json()
+                    setStore({...store, currentUser: data })
+                    history.push('/')
+                } catch (error) {
+                    console.error(error)
+                }
+            },
+            getSingleUser: async (token) => {
+                const store = getStore();
+                try {
+                    const resp = await fetch(process.env.REACT_APP_API_URL + 'api/v1/users', {
+                        headers: { 
+                            "Content-type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                    }
+                    })
                     const data = await resp.json()
                     setStore({ userData: data })
                 } catch (error) {
